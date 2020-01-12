@@ -1,62 +1,71 @@
 package rabbitmq
 
 import (
-	"github.com/ProtocolONE/rabbitmq/internal/proto"
-	"github.com/streadway/amqp"
-	"github.com/stretchr/testify/assert"
-	"testing"
+    "github.com/streadway/amqp"
+    "github.com/stretchr/testify/assert"
+    "gopkg.in/ProtocolONE/rabbitmq.v1/internal/proto"
+    "testing"
 )
 
 func TestPublisher_DeclareExchange_Error(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+    b, _ := NewBroker(defaultAmqpUrl)
 
-	b.Opts.ExchangeOpts.Opts = Opts{OptAutoDelete: true}
-	b.Opts.QueueOpts.Opts = Opts{OptAutoDelete: true}
+    broker, ok := b.(*Broker)
+    assert.True(t, ok)
 
-	topic := "test.publisher"
-	one := &test.One{Value: topic}
+    broker.Opts.ExchangeOpts.Opts = Opts{OptAutoDelete: true}
+    broker.Opts.QueueOpts.Opts = Opts{OptAutoDelete: true}
 
-	err := b.Publish(topic, one, nil)
+    topic := "test.publisher"
+    one := &test.One{Value: topic}
 
-	assert.Nil(t, err)
-	b.Opts.ExchangeOpts.Opts = Opts{OptAutoDelete: false}
+    err := b.Publish(topic, one, nil)
 
-	err = b.Publish(topic, one, nil)
-	assert.NotNil(t, err)
+    assert.Nil(t, err)
+    broker.Opts.ExchangeOpts.Opts = Opts{OptAutoDelete: false}
+
+    err = b.Publish(topic, one, nil)
+    assert.NotNil(t, err)
 }
 
 func TestPublisher_DeclareQueue_Error(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+    b, _ := NewBroker(defaultAmqpUrl)
 
-	b.Opts.ExchangeOpts.Opts = Opts{OptAutoDelete: true}
-	b.Opts.QueueOpts.Opts = Opts{OptAutoDelete: true}
+    broker, ok := b.(*Broker)
+    assert.True(t, ok)
 
-	topic := "test.publisher"
-	one := &test.One{Value: topic}
+    broker.Opts.ExchangeOpts.Opts = Opts{OptAutoDelete: true}
+    broker.Opts.QueueOpts.Opts = Opts{OptAutoDelete: true}
 
-	err := b.Publish(topic, one, nil)
+    topic := "test.publisher"
+    one := &test.One{Value: topic}
 
-	assert.Nil(t, err)
-	b.Opts.QueueOpts.Opts = Opts{OptAutoDelete: false}
+    err := b.Publish(topic, one, nil)
 
-	err = b.Publish(topic, one, nil)
-	assert.NotNil(t, err)
+    assert.Nil(t, err)
+    broker.Opts.QueueOpts.Opts = Opts{OptAutoDelete: false}
+
+    err = b.Publish(topic, one, nil)
+    assert.NotNil(t, err)
 }
 
 func TestPublisher_QueueBind_Error(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+    b, _ := NewBroker(defaultAmqpUrl)
 
-	b.Opts.ExchangeOpts.Opts = Opts{OptAutoDelete: true}
-	b.Opts.QueueOpts.Opts = Opts{OptAutoDelete: true}
+    broker, ok := b.(*Broker)
+    assert.True(t, ok)
 
-	topic := "test.publisher"
-	one := &test.One{Value: topic}
+    broker.Opts.ExchangeOpts.Opts = Opts{OptAutoDelete: true}
+    broker.Opts.QueueOpts.Opts = Opts{OptAutoDelete: true}
 
-	err := b.Publish(topic, one, nil)
+    topic := "test.publisher"
+    one := &test.One{Value: topic}
 
-	assert.Nil(t, err)
-	b.Opts.QueueBindOpts.Args = amqp.Table{"test": int(3)}
+    err := b.Publish(topic, one, nil)
 
-	err = b.Publish(topic, one, nil)
-	assert.NotNil(t, err)
+    assert.Nil(t, err)
+    broker.Opts.QueueBindOpts.Args = amqp.Table{"test": int(3)}
+
+    err = b.Publish(topic, one, nil)
+    assert.NotNil(t, err)
 }
