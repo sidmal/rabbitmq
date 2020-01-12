@@ -1,4 +1,4 @@
-module gopkg.in/ProtocolONE/rabbitmq.v1
+module github.com/sidmal/rabbitmq
 
 require (
 	github.com/gogo/protobuf v1.2.0
