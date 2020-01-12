@@ -5,7 +5,7 @@ RabbitMQ publisher/subscriber implementation
 
 ## Installation 
 
-`go get github.com/ProtocolONE/rabbitmq`
+`go get github.com/sidmal/rabbitmq`
 
 ## Usage
 
