@@ -7,13 +7,13 @@ import (
 )
 
 func TestSubscriber_Subscribe_Connection_Error(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	broker, ok := b.(*Broker)
 	assert.True(t, ok)
 
 	topic := "test.subscriber"
-	sub := broker.initSubscriber(topic)
+	sub := broker.newSubscriber(topic, DefaultEncoder)
 
 	err := sub.rabbit.conn.Close()
 	assert.Nil(t, err)
@@ -26,13 +26,13 @@ func TestSubscriber_Subscribe_Connection_Error(t *testing.T) {
 }
 
 func TestSubscriber_Subscribe_Channel_Error(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	broker, ok := b.(*Broker)
 	assert.True(t, ok)
 
 	topic := "test.subscriber"
-	sub := broker.initSubscriber(topic)
+	sub := broker.newSubscriber(topic, DefaultEncoder)
 
 	err := sub.rabbit.channel.Close()
 	assert.Nil(t, err)
@@ -45,7 +45,7 @@ func TestSubscriber_Subscribe_Channel_Error(t *testing.T) {
 }
 
 func TestSubscriber_DeclareExchange_Error(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	broker, ok := b.(*Broker)
 	assert.True(t, ok)
@@ -54,7 +54,7 @@ func TestSubscriber_DeclareExchange_Error(t *testing.T) {
 	broker.Opts.QueueOpts.Opts = Opts{OptAutoDelete: true}
 
 	topic := "test"
-	broker.subscriber = broker.initSubscriber(topic)
+	broker.subscriber = broker.newSubscriber(topic, DefaultEncoder)
 
 	_, err := broker.subscriber.consume()
 
@@ -66,7 +66,7 @@ func TestSubscriber_DeclareExchange_Error(t *testing.T) {
 }
 
 func TestSubscriber_DeclareQueue_Error(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	broker, ok := b.(*Broker)
 	assert.True(t, ok)
@@ -75,7 +75,7 @@ func TestSubscriber_DeclareQueue_Error(t *testing.T) {
 	broker.Opts.QueueOpts.Opts = Opts{OptAutoDelete: true}
 
 	topic := "test"
-	broker.subscriber = broker.initSubscriber(topic)
+	broker.subscriber = broker.newSubscriber(topic, DefaultEncoder)
 
 	_, err := broker.subscriber.consume()
 
@@ -87,7 +87,7 @@ func TestSubscriber_DeclareQueue_Error(t *testing.T) {
 }
 
 func TestSubscriber_QueueBind_Error(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	broker, ok := b.(*Broker)
 	assert.True(t, ok)
@@ -96,7 +96,7 @@ func TestSubscriber_QueueBind_Error(t *testing.T) {
 	broker.Opts.QueueOpts.Opts = Opts{OptAutoDelete: true}
 
 	topic := "test"
-	broker.subscriber = broker.initSubscriber(topic)
+	broker.subscriber = broker.newSubscriber(topic, DefaultEncoder)
 
 	_, err := broker.subscriber.consume()
 
@@ -110,7 +110,7 @@ func TestSubscriber_QueueBind_Error(t *testing.T) {
 }
 
 func TestSubscriber_Consume_Error(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	broker, ok := b.(*Broker)
 	assert.True(t, ok)
@@ -119,7 +119,7 @@ func TestSubscriber_Consume_Error(t *testing.T) {
 	broker.Opts.QueueOpts.Opts = Opts{OptAutoDelete: true}
 
 	topic := "test"
-	broker.subscriber = broker.initSubscriber(topic)
+	broker.subscriber = broker.newSubscriber(topic, DefaultEncoder)
 
 	_, err := broker.subscriber.consume()
 

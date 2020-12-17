@@ -3,7 +3,6 @@ package rabbitmq
 import (
 	"errors"
 	"fmt"
-	"github.com/gogo/protobuf/proto"
 	"github.com/streadway/amqp"
 	"os"
 	"os/signal"
@@ -13,10 +12,11 @@ import (
 )
 
 type BrokerInterface interface {
-	RegisterSubscriber(string, interface{}) error
-	Subscribe(chan bool) error
-	Publish(string, proto.Message, amqp.Table) error
-	SetExchangeName(string)
+	RegisterSubscriber(topic string, fn interface{}) error
+	Subscribe(ch chan bool) error
+	Publish(topic string, msg interface{}, headers amqp.Table) error
+	SetExchangeName(name string)
+	SetQueueOptsArgs(args amqp.Table)
 }
 
 type Broker struct {
@@ -25,6 +25,7 @@ type Broker struct {
 
 	subscriber *subscriber
 	publisher  *publisher
+	encoder    MessageEncoder
 
 	Opts *BrokerOpts
 }
@@ -65,9 +66,36 @@ type PublishOpts struct {
 	Opts Opts
 }
 
-func NewBroker(address string) (BrokerInterface, error) {
-	b := &Broker{address: address}
-	b.init()
+func NewBroker(address string, encoder MessageEncoder) (BrokerInterface, error) {
+	b := &Broker{
+		address: address,
+		Opts: &BrokerOpts{
+			ExchangeOpts: &ExchangeOpts{
+				Kind: defaultExchangeKind,
+				Opts: defaultExchangeOpts,
+				Args: nil,
+			},
+			QueueOpts: &QueueOpts{
+				Opts: defaultQueueOpts,
+				Args: nil,
+			},
+			QueueBindOpts: &QueueBindOpts{
+				Key:    defaultQueueBindKey,
+				NoWait: false,
+				Args:   nil,
+			},
+			ConsumeOpts: &ConsumeOpts{
+				Opts: defaultConsumeOpts,
+				Args: nil,
+			},
+			PublishOpts: &PublishOpts{Opts: defaultPublishOpts},
+		},
+		encoder: encoder,
+	}
+
+	if b.encoder == nil {
+		b.encoder = DefaultEncoder
+	}
 
 	rmq := b.newRabbitMq()
 	err := rmq.connect()
@@ -81,37 +109,17 @@ func NewBroker(address string) (BrokerInterface, error) {
 	return b, err
 }
 
-func (b *Broker) init() {
-	b.Opts = &BrokerOpts{
-		ExchangeOpts: &ExchangeOpts{
-			Kind: defaultExchangeKind,
-			Opts: defaultExchangeOpts,
-			Args: nil,
-		},
-		QueueOpts: &QueueOpts{
-			Opts: defaultQueueOpts,
-			Args: nil,
-		},
-		QueueBindOpts: &QueueBindOpts{
-			Key:    defaultQueueBindKey,
-			NoWait: false,
-			Args:   nil,
-		},
-		ConsumeOpts: &ConsumeOpts{
-			Opts: defaultConsumeOpts,
-			Args: nil,
-		},
-		PublishOpts: &PublishOpts{Opts: defaultPublishOpts},
-	}
-}
-
 func (b *Broker) SetExchangeName(name string) {
 	b.Opts.ExchangeOpts.Name = name
 }
 
+func (b *Broker) SetQueueOptsArgs(args amqp.Table) {
+	b.Opts.QueueOpts.Args = args
+}
+
 func (b *Broker) RegisterSubscriber(topic string, fn interface{}) error {
 	if b.subscriber == nil {
-		b.subscriber = b.initSubscriber(topic)
+		b.subscriber = b.newSubscriber(topic, b.encoder)
 	}
 
 	typ := reflect.TypeOf(fn)
@@ -144,12 +152,6 @@ func (b *Broker) RegisterSubscriber(topic string, fn interface{}) error {
 		return errors.New("first argument of handler func must be pointer to struct")
 	}
 
-	_, ok := reflect.New(reqType.Elem()).Interface().(proto.Message)
-
-	if !ok {
-		return errors.New("first argument of handler func must be instance of a proto.Message interface")
-	}
-
 	tNum = typ.NumOut()
 
 	if tNum != 1 {
@@ -177,7 +179,6 @@ func (b *Broker) Subscribe(exit chan bool) (err error) {
 	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
 	select {
-	// wait on kill signal
 	case <-ch:
 	case <-exit:
 	}
@@ -185,7 +186,7 @@ func (b *Broker) Subscribe(exit chan bool) (err error) {
 	return
 }
 
-func (b *Broker) Publish(topic string, msg proto.Message, h amqp.Table) (err error) {
+func (b *Broker) Publish(topic string, msg interface{}, h amqp.Table) error {
 	if b.publisher == nil {
 		b.publisher = b.newPublisher(topic)
 	}
@@ -195,15 +196,16 @@ func (b *Broker) Publish(topic string, msg proto.Message, h amqp.Table) (err err
 	}
 
 	m := amqp.Publishing{
-		ContentType: defaultContentType,
-		Headers: h,
+		ContentType: b.encoder.GetContentType(),
+		Headers:     h,
 	}
 
-	m.Body, err = proto.Marshal(msg)
+	body, err := b.encoder.Marshal(msg)
 
 	if err != nil {
-		return
+		return fmt.Errorf("[*] Message publication failed with error: %s", err)
 	}
 
+	m.Body = body
 	return b.publisher.publish(topic, m)
 }

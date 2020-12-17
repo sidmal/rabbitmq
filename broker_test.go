@@ -1,8 +1,8 @@
 package rabbitmq
 
 import (
-	"github.com/gogo/protobuf/proto"
-	"github.com/sidmal/rabbitmq/internal/proto"
+	"github.com/golang/protobuf/proto"
+	"github.com/sidmal/rabbitmq/pkg/proto"
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -10,13 +10,11 @@ import (
 )
 
 const (
-	defaultAmqpUrl = "amqp://127.0.0.1:5672"
+	defaultAmqpUrl = "amqp://root:password@127.0.0.1:5672"
 )
 
-type TestStruct struct{}
-
 func TestNewBroker(t *testing.T) {
-	b, err := NewBroker(defaultAmqpUrl)
+	b, err := NewBroker(defaultAmqpUrl, nil)
 	assert.Nil(t, err)
 
 	broker, ok := b.(*Broker)
@@ -31,12 +29,12 @@ func TestNewBroker(t *testing.T) {
 }
 
 func TestNewBroker_Fail(t *testing.T) {
-	_, err := NewBroker("")
+	_, err := NewBroker("", nil)
 	assert.NotNil(t, err)
 }
 
 func TestBroker_RegisterSubscriber_Correct(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	fn := func(msg *test.One, b amqp.Delivery) error {
 		return nil
@@ -51,7 +49,7 @@ func TestBroker_RegisterSubscriber_Correct(t *testing.T) {
 }
 
 func TestBroker_RegisterSubscriber_HandlerNotFunc(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	fn := "func"
 	err := b.RegisterSubscriber("test", fn)
@@ -65,7 +63,7 @@ func TestBroker_RegisterSubscriber_HandlerNotFunc(t *testing.T) {
 }
 
 func TestBroker_RegisterSubscriber_HandlerEmptyArgs(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	fn := func() error {
 		return nil
@@ -82,7 +80,7 @@ func TestBroker_RegisterSubscriber_HandlerEmptyArgs(t *testing.T) {
 }
 
 func TestBroker_RegisterSubscriber_HandlerCountArgs(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	fn := func(a string, b int, c bool) error {
 		return nil
@@ -99,7 +97,7 @@ func TestBroker_RegisterSubscriber_HandlerCountArgs(t *testing.T) {
 }
 
 func TestBroker_RegisterSubscriber_HandlerIncorrectSecondArg(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	fn := func(msg proto.Message, b int) error {
 		return nil
@@ -116,7 +114,7 @@ func TestBroker_RegisterSubscriber_HandlerIncorrectSecondArg(t *testing.T) {
 }
 
 func TestBroker_RegisterSubscriber_HandlerIncorrectFirstArg(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	fn := func(msg string, b amqp.Delivery) error {
 		return nil
@@ -132,25 +130,8 @@ func TestBroker_RegisterSubscriber_HandlerIncorrectFirstArg(t *testing.T) {
 	assert.Len(t, broker.subscriber.handlers, 0)
 }
 
-func TestBroker_RegisterSubscriber_HandlerIncorrectFirstArgType(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
-
-	fn := func(msg *TestStruct, b amqp.Delivery) error {
-		return nil
-	}
-
-	err := b.RegisterSubscriber("test", fn)
-
-	broker, ok := b.(*Broker)
-	assert.True(t, ok)
-
-	assert.Error(t, err)
-	assert.Equal(t, "first argument of handler func must be instance of a proto.Message interface", err.Error())
-	assert.Len(t, broker.subscriber.handlers, 0)
-}
-
 func TestBroker_RegisterSubscriber_HandlerIncorrectOut(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	fn := func(msg *test.One, b amqp.Delivery) {}
 
@@ -165,7 +146,7 @@ func TestBroker_RegisterSubscriber_HandlerIncorrectOut(t *testing.T) {
 }
 
 func TestBroker_RegisterSubscriber_HandlerDuplicate(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	fn := func(msg *test.One, b amqp.Delivery) error {
 		return nil
@@ -185,7 +166,7 @@ func TestBroker_RegisterSubscriber_HandlerDuplicate(t *testing.T) {
 }
 
 func TestBroker_RegisterSubscriber_HandlerIncorrectFirstArgTypes(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	fn1 := func(msg *test.One, b amqp.Delivery) error {
 		return nil
@@ -209,7 +190,7 @@ func TestBroker_RegisterSubscriber_HandlerIncorrectFirstArgTypes(t *testing.T) {
 }
 
 func TestBroker_RegisterSubscriber_HandlerMoreOneHandlersCorrect(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	fn1 := func(msg *test.One, b amqp.Delivery) error {
 		return nil
@@ -239,7 +220,7 @@ func TestBroker_RegisterSubscriber_HandlerMoreOneHandlersCorrect(t *testing.T) {
 }
 
 func TestBroker_NewPublisher(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	broker, ok := b.(*Broker)
 	assert.True(t, ok)
@@ -257,13 +238,13 @@ func TestBroker_NewPublisher(t *testing.T) {
 }
 
 func TestBroker_InitSubscriber(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	broker, ok := b.(*Broker)
 	assert.True(t, ok)
 
 	topic := "test.subscriber"
-	sub := broker.initSubscriber(topic)
+	sub := broker.newSubscriber(topic, DefaultEncoder)
 
 	assert.Equal(t, broker.rabbitMQ, sub.rabbit)
 	assert.Equal(t, topic, sub.topic)
@@ -278,7 +259,7 @@ func TestBroker_InitSubscriber(t *testing.T) {
 }
 
 func TestBroker_Publish(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	broker, ok := b.(*Broker)
 	assert.True(t, ok)
@@ -298,16 +279,16 @@ func TestBroker_Publish(t *testing.T) {
 }
 
 func TestBroker_Publish_MarshalFail(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, NewProtobufEncoder())
 	topic := "test.publisher"
 
 	err := b.Publish(topic, nil, nil)
 	assert.NotNil(t, err)
-	assert.Regexp(t, "Marshal", err.Error())
+	assert.Regexp(t, "^\\[\\*\\]\\ Message\\ publication\\ failed\\ with\\ error*.", err.Error())
 }
 
 func TestBroker_Subscribe(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	broker, ok := b.(*Broker)
 	assert.True(t, ok)

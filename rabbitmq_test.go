@@ -8,7 +8,7 @@ import (
 )
 
 func TestRabbitMq_ReConnect_Error(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	broker, ok := b.(*Broker)
 	assert.True(t, ok)

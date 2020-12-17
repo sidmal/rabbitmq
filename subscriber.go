@@ -13,7 +13,6 @@ import (
 const (
 	defaultExchangeKind = "topic"
 	defaultQueueBindKey = "*"
-	defaultContentType  = "application/protobuf"
 
 	BrokerMessageRetryCountHeader = "x-retry-count"
 )
@@ -39,15 +38,17 @@ type subscriber struct {
 		*ConsumeOpts
 	}
 
-	ext map[string]bool
+	ext     map[string]bool
+	encoder MessageEncoder
 }
 
-func (b *Broker) initSubscriber(topic string) (subs *subscriber) {
+func (b *Broker) newSubscriber(topic string, encoder MessageEncoder) (subs *subscriber) {
 	subs = &subscriber{
 		topic:    topic,
 		rabbit:   b.rabbitMQ,
 		handlers: []*handler{},
 		ext:      make(map[string]bool),
+		encoder:  encoder,
 	}
 
 	subs.opts.ExchangeOpts = b.Opts.ExchangeOpts
@@ -76,14 +77,6 @@ func (s *subscriber) Subscribe() (err error) {
 	}
 
 	fn := func(msg amqp.Delivery) {
-		if msg.ContentType != defaultContentType {
-			if s.opts.ConsumeOpts.Opts[OptAutoAck] == false {
-				_ = msg.Nack(false, false)
-			}
-
-			return
-		}
-
 		for _, h := range s.handlers {
 			st := reflect.New(h.reqEl).Interface().(proto.Message)
 			err = proto.Unmarshal(msg.Body, st)

@@ -1,14 +1,14 @@
 package rabbitmq
 
 import (
-	"github.com/sidmal/rabbitmq/internal/proto"
+	"github.com/sidmal/rabbitmq/pkg/proto"
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestPublisher_DeclareExchange_Error(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	broker, ok := b.(*Broker)
 	assert.True(t, ok)
@@ -29,7 +29,7 @@ func TestPublisher_DeclareExchange_Error(t *testing.T) {
 }
 
 func TestPublisher_DeclareQueue_Error(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	broker, ok := b.(*Broker)
 	assert.True(t, ok)
@@ -50,7 +50,7 @@ func TestPublisher_DeclareQueue_Error(t *testing.T) {
 }
 
 func TestPublisher_QueueBind_Error(t *testing.T) {
-	b, _ := NewBroker(defaultAmqpUrl)
+	b, _ := NewBroker(defaultAmqpUrl, nil)
 
 	broker, ok := b.(*Broker)
 	assert.True(t, ok)
