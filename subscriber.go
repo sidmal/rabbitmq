@@ -2,7 +2,6 @@ package rabbitmq
 
 import (
 	"errors"
-	"github.com/golang/protobuf/proto"
 	"github.com/streadway/amqp"
 	"log"
 	"reflect"
@@ -78,8 +77,8 @@ func (s *subscriber) Subscribe() (err error) {
 
 	fn := func(msg amqp.Delivery) {
 		for _, h := range s.handlers {
-			st := reflect.New(h.reqEl).Interface().(proto.Message)
-			err = proto.Unmarshal(msg.Body, st)
+			st := reflect.New(h.reqEl).Interface()
+			err = s.encoder.Unmarshal(msg.Body, st)
 
 			if err != nil {
 				if s.opts.ConsumeOpts.Opts[OptAutoAck] == false {
