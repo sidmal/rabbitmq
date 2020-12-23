@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	defaultAmqpUrl = "amqp://root:password@127.0.0.1:5672"
+	defaultAmqpUrl = "amqp://guest:guest@127.0.0.1:5672"
 )
 
 func TestNewBroker(t *testing.T) {
