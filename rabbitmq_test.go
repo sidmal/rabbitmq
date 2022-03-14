@@ -61,7 +61,8 @@ func TestRabbitMq_DeclareInfrastructure_QueueDeclare_Error(t *testing.T) {
 
 func TestRabbitMq_Reconnect_ConnectSleep_Ok(t *testing.T) {
 	opts := &Options{
-		dsn: defaultAmqpUrl,
+		dsn:   defaultAmqpUrl,
+		topic: "TestConsumer_ReConsume_ConsumeError",
 	}
 	rmq, err := newRabbitMq(opts)
 	assert.NoError(t, err)
@@ -94,7 +95,8 @@ func TestRabbitMq_Reconnect_ConnectSleep_Ok(t *testing.T) {
 
 func TestRabbitMq_Reconnect_ConnectWithoutSleep_Ok(t *testing.T) {
 	opts := &Options{
-		dsn: defaultAmqpUrl,
+		dsn:   defaultAmqpUrl,
+		topic: "TestConsumer_ReConsume_ConsumeError",
 	}
 	rmq, err := newRabbitMq(opts)
 	assert.NoError(t, err)
@@ -119,7 +121,8 @@ func TestRabbitMq_Reconnect_ConnectWithoutSleep_Ok(t *testing.T) {
 
 func TestRabbitMq_Reconnect_CloseConnect(t *testing.T) {
 	opts := &Options{
-		dsn: defaultAmqpUrl,
+		dsn:   defaultAmqpUrl,
+		topic: "TestConsumer_ReConsume_ConsumeError",
 	}
 	rmq, err := newRabbitMq(opts)
 	assert.NoError(t, err)

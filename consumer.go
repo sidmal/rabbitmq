@@ -43,16 +43,18 @@ func newConsumer(rmq *rabbitMq, encoder MessageEncoder, opts *Options) *consumer
 func (m *consumer) Consume() {
 	autoAck := m.opts.GetConsumerOpts().AutoAck
 	fn := func(in amqp.Delivery) {
-		for _, h := range m.handlers {
-			err := h.execute(in, m.encoder)
-			if err != nil {
-				if !autoAck {
-					_ = in.Nack(false, false)
-				}
-				continue
-			}
+		var err error
 
-			if !autoAck {
+		for _, h := range m.handlers {
+			if err = h.execute(in, m.encoder); err != nil {
+				break
+			}
+		}
+
+		if !autoAck {
+			if err != nil {
+				_ = in.Nack(false, false)
+			} else {
 				_ = in.Ack(false)
 			}
 		}
@@ -105,11 +107,11 @@ func (m *consumer) reConsume() {
 
 		for d := range cons {
 			m.rabbitMQ.wg.Add(1)
-
 			go func(d amqp.Delivery) {
 				m.fn(d)
 				m.rabbitMQ.wg.Done()
 			}(d)
+			m.rabbitMQ.wg.Wait()
 		}
 	}
 }

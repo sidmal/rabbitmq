@@ -1,11 +1,11 @@
-RabbitMQ publisher/subscriber implementation 
+RabbitMQ publisher/consumer wrapper implementation
 =============
 
 [![Build Status](https://travis-ci.org/sidmal/rabbitmq.svg?branch=master)](https://travis-ci.org/sidmal/rabbitmq) [![codecov](https://codecov.io/gh/sidmal/rabbitmq/branch/master/graph/badge.svg)](https://codecov.io/gh/sidmal/rabbitmq)
 
 ## Installation 
 
-`go get github.com/sidmal/rabbitmq`
+`go get -u github.com/sidmal/rabbitmq`
 
 ## Usage
 
@@ -13,77 +13,93 @@ RabbitMQ publisher/subscriber implementation
 package main
 
 import (
-	"fmt"
-	"github.com/ProtocolONE/rabbitmq/internal/proto"
-	"github.com/ProtocolONE/rabbitmq/pkg"
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/sidmal/rabbitmq"
 	"log"
-	"math/rand"
 )
 
+type Message struct {
+	Value string
+}
+
 func main() {
-	br1, err := rabbitmq.NewBroker("amqp://127.0.0.1:5672")
+	dsn := "amqp://guest:guest@127.0.0.1:5672"
+	topicName := "example"
+	opts := []rabbitmq.Option{
+		rabbitmq.DSN(dsn),
+		rabbitmq.Topic(topicName),
+	}
 
+	// First broker consume income messages and has two consume handle func
+	broker, err := rabbitmq.NewBroker(opts...)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	topic := "test"
-
-	br1.Opts.ExchangeOpts.Opts = rabbitmq.Opts{rabbitmq.OptAutoDelete: true}
-	br1.Opts.QueueOpts.Opts = rabbitmq.Opts{rabbitmq.OptAutoDelete: true}
-
-	br2, err := rabbitmq.NewBroker("amqp://127.0.0.1:5672")
-
+	opts = []rabbitmq.Option{
+		rabbitmq.DSN(dsn),
+		rabbitmq.Topic(topicName),
+		rabbitmq.Queue(&rabbitmq.QueueOptions{
+			Opts: rabbitmq.DefaultQueueOpts,
+			Args: amqp.Table{
+				"x-dead-letter-exchange":    topicName,
+				"x-message-ttl":             int32(3 * 1000),
+				"x-dead-letter-routing-key": "*",
+			},
+		}),
+		rabbitmq.Exchange(&rabbitmq.ExchangeOptions{
+			Name: "example.timeout3s",
+			Opts: rabbitmq.DefaultExchangeOpts,
+		}),
+	}
+	
+	// Second broker consume delayed messages with delay 3 second
+	// This broker hasn't self consume handler functions, just delay messages and send messages to first broker 
+	// to handle.
+	brokerDlx, err := rabbitmq.NewBroker(opts...)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	br2.Opts.QueueOpts.Args = amqp.Table{
-		"x-dead-letter-exchange":    topic,
-		"x-message-ttl":             int32(1 * 1000),
-		"x-dead-letter-routing-key": "*",
-	}
-	br2.Opts.ExchangeOpts.Name = "test.timeout10"
-
-	fn := func(msg *test.One, d amqp.Delivery) (err error) {
-		rnd := rand.Intn(100)
-		rtr := int32(0)
-
-		if v, ok := d.Headers["x-retry-count"]; ok {
-			rtr = v.(int32)
-		}
-
-		if rnd > 50 {
-			if rtr > 10 {
-				log.Printf("[x] Max retries count is ended. Delete message : %s\n", msg.Value)
-			} else {
-				_ = br2.Publish(d.RoutingKey, msg, amqp.Table{"x-retry-count": rtr + 1})
-			}
-
-			log.Printf("[x] Retry (retry number %d) failed message: %s\n", rtr, msg.Value)
-			return
-		}
-
-		log.Printf("Message successfully processed (retry number %d): %s", rtr, msg.Value)
-		return
-	}
-
-	err = br1.RegisterSubscriber(topic, fn)
-
-	for i := 0; i < 10; i++ {
-		one := &test.One{Value: fmt.Sprintf("%s_%d", topic, i)}
-		err = br1.Publish(topic, one, nil)
-
-		if err == nil {
-			log.Printf("Message published: %s\n", one.Value)
-		}
-	}
-
-	err = br1.Subscribe(nil)
-
+	// Init first consume func
+	err = broker.AddConsumerHandler(&Message{}, ConsumerOne)
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	// Init second consume func
+	err = broker.AddConsumerHandler(&Message{}, ConsumerTwo)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	err = broker.Publish(&Message{Value: "this message will be processed immediately"}, nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	err = brokerDlx.Publish(&Message{Value: "this message will be processed with delay 3 second"}, nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	_ = broker.StartConsume(nil)
+}
+
+func ConsumerOne(msg interface{}, _ amqp.Delivery) error {
+	message := msg.(*Message)
+	log.Println(message.Value)
+
+	return nil
+}
+
+func ConsumerTwo(msg interface{}, _ amqp.Delivery) error {
+	message := msg.(*Message)
+	message.Value = "[ConsumerTwo] " + message.Value
+	log.Println(message.Value)
+
+	return nil
 }
 ```
+
+Full work example available [this](./examples/consumers).

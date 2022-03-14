@@ -46,6 +46,7 @@ func TestConsumer_ReConsume_ConsumeError(t *testing.T) {
 				"some_undefined_arg": &proto.One{},
 			},
 		},
+		topic: "TestConsumer_ReConsume_ConsumeError",
 	}
 	rmq, err := newRabbitMq(opts)
 	assert.NoError(t, err)

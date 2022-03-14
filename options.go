@@ -159,14 +159,14 @@ func (m *Options) GetMessageEncoder() MessageEncoder {
 
 func (m *Options) GetQueueName() string {
 	if m.queue == nil || m.queue.Name == "" {
-		return m.topic
+		return m.GetExchangeName() + ".queue"
 	}
 	return m.queue.Name
 }
 
 func (m *Options) GetExchangeName() string {
 	if m.exchange == nil || m.exchange.Name == "" {
-		return m.GetQueueName() + ".exchange"
+		return m.topic
 	}
 	return m.exchange.Name
 }

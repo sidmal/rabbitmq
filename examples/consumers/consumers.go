@@ -12,7 +12,7 @@ type Message struct {
 
 func main() {
 	dsn := "amqp://guest:guest@127.0.0.1:5672"
-	topicName := "example_consumers_topic"
+	topicName := "example"
 	opts := []rabbitmq.Option{
 		rabbitmq.DSN(dsn),
 		rabbitmq.Topic(topicName),
@@ -34,18 +34,10 @@ func main() {
 			},
 		}),
 		rabbitmq.Exchange(&rabbitmq.ExchangeOptions{
-			Name: "example_timeout_3s",
+			Name: "example.timeout3s",
 			Opts: rabbitmq.DefaultExchangeOpts,
 		}),
 	}
-	opts = append(opts, rabbitmq.Queue(&rabbitmq.QueueOptions{
-		Opts: rabbitmq.DefaultQueueOpts,
-		Args: amqp.Table{
-			"x-dead-letter-exchange":    topicName,
-			"x-message-ttl":             int32(3 * 1000),
-			"x-dead-letter-routing-key": "*",
-		},
-	}))
 	brokerDlx, err := rabbitmq.NewBroker(opts...)
 	if err != nil {
 		log.Fatalln(err)
@@ -70,16 +62,18 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	_ = broker.StartConsume(nil)
 }
 
-func ConsumerOne(msg interface{}, b amqp.Delivery) error {
+func ConsumerOne(msg interface{}, _ amqp.Delivery) error {
 	message := msg.(*Message)
 	log.Println(message.Value)
 
 	return nil
 }
 
-func ConsumerTwo(msg interface{}, b amqp.Delivery) error {
+func ConsumerTwo(msg interface{}, _ amqp.Delivery) error {
 	message := msg.(*Message)
 	message.Value = "[ConsumerTwo] " + message.Value
 	log.Println(message.Value)

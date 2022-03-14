@@ -118,6 +118,8 @@ func (m *rabbitMq) reconnect() {
 			m.waitConnection = make(chan struct{})
 			m.Unlock()
 		case <-m.close:
+			_ = m.channel.Cancel(m.uuid, true)
+			_ = m.conn.Close()
 			return
 		}
 	}
