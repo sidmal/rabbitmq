@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+option go_package = "/";
+
+message One {
+    string value = 1;
+}
+
+message Two {
+    string value = 1;
+}

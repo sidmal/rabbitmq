@@ -1,0 +1,14 @@
+language: go
+sudo: false
+dist: trusty
+go:
+  - 1.13.x
+env:
+  - GO111MODULE=on
+install: true
+services:
+  - rabbitmq
+script:
+  - go test ./... -coverprofile=coverage.out -covermode=atomic
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
