@@ -1,23 +1,22 @@
 version: 2.1
 
-orbs:
-  codecov: codecov/codecov@1.0.2
-environment:
-  - GO111MODULE=on
-
 jobs:
   test:
     working_directory: ~/repo
     docker:
-      - image: circleci/go:1.17
-    services:
-      - rabbitmq-server
+      - image: cimg/go:1.17
+      - image: rabbitmq
+    environment:
+      GO111MODULE=on
     steps:
+      - run:
+          name: Wait for RabbitMQ to have started
+          command: dockerize -wait tcp://localhost:5672 -timeout 1m
       - run:
           name: Run tests
           command: go test ./... -coverprofile=coverage.out -covermode=atomic
-      - codecov/upload:
-          file: {{ coverage_report_filepath }}
+#      - codecov/upload:
+#          file: {{ coverage_report_filepath }}
 
 workflows:
   sample:
