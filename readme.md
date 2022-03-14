@@ -1,7 +1,7 @@
 RabbitMQ publisher/consumer wrapper implementation
 =============
 
-[![Build Status](https://travis-ci.org/sidmal/rabbitmq.svg?branch=master)](https://travis-ci.org/sidmal/rabbitmq)
+[![CircleCI](https://circleci.com/gh/sidmal/rabbitmq/tree/master.svg?style=svg)](https://circleci.com/gh/sidmal/rabbitmq/tree/master)
 [![codecov](https://codecov.io/gh/sidmal/rabbitmq/branch/master/graph/badge.svg?token=9exebjKgl3)](https://codecov.io/gh/sidmal/rabbitmq)
 
 ## Installation 
