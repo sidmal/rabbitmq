@@ -1,0 +1,26 @@
+version: 2.1
+
+jobs:
+  test:
+    working_directory: ~/repo
+    docker:
+      - image: cimg/go:1.17
+      - image: rabbitmq
+    environment:
+      GO111MODULE=on
+    steps:
+      - checkout
+      - run:
+          name: Wait for RabbitMQ to have started
+          command: dockerize -wait tcp://localhost:5672 -timeout 1m
+      - run:
+          name: Run tests
+          command: go test -race ./... -coverprofile=coverage.out -covermode=atomic
+      - run:
+          name: Upload coverage to Codecov
+          command: bash <(curl -s https://codecov.io/bash)
+
+workflows:
+  test:
+    jobs:
+      - test
