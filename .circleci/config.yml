@@ -15,9 +15,10 @@ jobs:
           command: dockerize -wait tcp://localhost:5672 -timeout 1m
       - run:
           name: Run tests
-          command: go test ./... -coverprofile=coverage.out -covermode=atomic
-#      - codecov/upload:
-#          file: {{ coverage_report_filepath }}
+          command: go test -race ./... -coverprofile=coverage.out -covermode=atomic
+      - run:
+          name: Upload coverage to Codecov
+          command: bash <(curl -s https://codecov.io/bash)
 
 workflows:
   sample:
