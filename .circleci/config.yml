@@ -1,5 +1,10 @@
 version: 2.1
 
+orbs:
+  codecov: codecov/codecov@1.0.2
+environment:
+  - GO111MODULE=on
+
 jobs:
   test:
     working_directory: ~/repo
@@ -7,15 +12,12 @@ jobs:
       - image: circleci/go:1.17
     services:
       - rabbitmq-server
-    environment:
-      - GO111MODULE=on
     steps:
       - run:
           name: Run tests
           command: go test ./... -coverprofile=coverage.out -covermode=atomic
-      - run:
-          name: Send codecov
-          command: bash <(curl -s https://codecov.io/bash)
+      - codecov/upload:
+          file: {{ coverage_report_filepath }}
 
 workflows:
   sample:
