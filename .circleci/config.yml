@@ -10,16 +10,6 @@ jobs:
       GO111MODULE=on
     steps:
       - checkout
-      - restore_cache:
-        keys:
-          - go-mod-v4-{{ checksum "go.sum" }}
-      - run:
-          name: Install Dependencies
-          command: go mod download
-      - save_cache:
-          key: go-mod-v4-{{ checksum "go.sum" }}
-          paths:
-            - "/go/pkg/mod"
       - run:
           name: Wait for RabbitMQ to have started
           command: dockerize -wait tcp://localhost:5672 -timeout 1m
